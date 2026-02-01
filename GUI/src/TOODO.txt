@@ -25,6 +25,8 @@ INOS :
     - add command reader. - global color var - noo just reset on reception I think..... 
     - add color / state loogic / wriitnjgn. ^^^
     Do CLOCKKKKCKCKCKCKKCKCKCLKLKCKLKCKCKOCOKCOKCCKOOKCOK
+    add colors to the buttons as in do light. 
+    clock does led out of range (40) I dk . 
 
 Later thing:::
     add devids to all the command messages so I can handle multiple controlers on a network ( or I could just domain it but that hard coded.... )

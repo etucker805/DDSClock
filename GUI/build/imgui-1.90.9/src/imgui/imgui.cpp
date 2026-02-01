@@ -7316,6 +7316,7 @@ void ImGui::End()
     window_stack_data.StackSizesOnBegin.CompareWithContextState(&g);
     g.CurrentWindowStack.pop_back();
     SetCurrentWindow(g.CurrentWindowStack.Size == 0 ? NULL : g.CurrentWindowStack.back().Window);
+
 }
 
 void ImGui::BringWindowToFocusFront(ImGuiWindow* window)

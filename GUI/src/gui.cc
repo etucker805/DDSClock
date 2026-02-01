@@ -706,7 +706,6 @@ void gui::draw_dashboard(int domain_id)
       {
         pair.second = false; // not sure this will stay in the map.
       }
-
       ImGui::End();
     }
   }
@@ -714,5 +713,7 @@ void gui::draw_dashboard(int domain_id)
   if(roboClock::done){
     backend::close_renderer();
     backend::close_backend();
+    close_imgui();
+    std::cout << "done\n";
   }
 }
