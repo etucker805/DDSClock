@@ -6,12 +6,16 @@
 #include <vector>
 #include <map>
 #include <mutex>
+#include <unordered_map>
+
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 #include "esp_system.h"
 #include "esp_event.h"
 #include "esp_log.h"
+#include "esp_wifi.h"
 #include "nvs_flash.h"
 #include "esp_netif.h"
 #include "protocol_examples_common.h"
@@ -172,6 +176,11 @@ int dds_work(DDS_DomainParticipant dp, int msec)
   return 0;
 }
 
+
+void writeDeviceInfo(){
+  DeviceInfoDataWriter_write(di_dw, &devInfo, DDS_HANDLE_NIL);
+}
+
 void readSysName()
 {
   SysNamePtrSeq samples;
@@ -272,9 +281,10 @@ void readClockCommand()
        */
       if (si->valid_data)
       {
-        printf("Sample Received (BC):  msg %d  \n", i);
+        //printf("Sample Received (BC):  msg %d  \n", i);
         // do things....
         clockStateMutex.lock();
+        
         ClockCommand_copy(&clockState, smsg);
         clockStateMutex.unlock();
       }
@@ -344,9 +354,9 @@ std::vector<bool> getSevenSegmentDisplay(int digit) {
 }
 
 void ledShow(){
-  for(){
-    // iter throug leds and set pixel colors.  
-  }
+  //for(){
+  //  // iter throug leds and set pixel colors.  
+  //}
 }
 // Color to RGB
 
@@ -366,9 +376,10 @@ void changeNumLed(std::vector<bool> ledVec, std::string name, float seconds, Col
       leds[TEST_MAP[name][i]] = COLOR_BLACK;
       leds[TEST_MAP[name][i] + 1] = COLOR_BLACK;
     }
+    // either write a func to do the set _ pixel stuff or find a way to do it here? 
 
-    FastLED.show();
-    delay(1);
+    led_strip_refresh(led_strip);
+    //delay(1);
   }
 }
 
@@ -404,8 +415,21 @@ void writeGear(Colors color, bool leftGear)
   }
 }
 
+std::vector<int> formatTime(int sec, int min, int doColon){
+  std::vector<int> ret(5, 0);
+  ret[0] = min/10;
+  ret[1] = min%10;
+  ret[2] = doColon ? 1 : 0;
+  ret[3] = sec/10;
+  ret[4] = sec%10;
+
+  return ret;
+}
+
 void writeTime(Colors color, int minuets, int seconds, int doColon)
 {
+
+  std::vector<int> vecTime = formatTime(seconds, minuets, doColon); 
 
   std::vector<bool> num1leds = getSevenSegmentDisplay(vecTime[0]); 
   std::vector<bool> num2leds = getSevenSegmentDisplay(vecTime[1]); 
@@ -413,12 +437,14 @@ void writeTime(Colors color, int minuets, int seconds, int doColon)
   std::vector<bool> num4leds = getSevenSegmentDisplay(vecTime[4]); 
 
 
-  changeNumLed(num1leds, "dig4", sec); //sec added for color
-  changeNumLed(num2leds, "dig3", sec);
-  changeNumLed(num3leds, "dig2", sec);
-  changeNumLed(num4leds, "dig1", sec);
+  changeNumLed(num1leds, "dig4", seconds, color); //sec added for color
+  changeNumLed(num2leds, "dig3", seconds, color);
+  changeNumLed(num3leds, "dig2", seconds, color);
+  changeNumLed(num4leds, "dig1", seconds, color);
 
 }
+
+
 
 static void dds_example_task(void *pvParameters)
 {
@@ -515,7 +541,7 @@ static void dds_example_task(void *pvParameters)
 
         // write and increment hearbeat.
 
-        dds_work(dp, 1000); // do DDS work for 100ms -> ~10 per sec
+        dds_work(dp, 100); // do DDS work for 100ms -> ~10 per sec
       }
     }
     else
@@ -539,7 +565,7 @@ static void device_task(void *pvParameters)
   {
     vTaskDelay(100 / portTICK_PERIOD_MS); // 0.1 dlay between loop runns..... might want more? 
     clockStateMutex.lock();
-    ClockCommandTypeSupport_copy(clockStateCopy, clockState);
+    ClockCommand_copy(&clockStateCopy, &clockState);
     clockStateMutex.unlock();
 
     // TODO:
@@ -550,8 +576,11 @@ static void device_task(void *pvParameters)
 
     if (!clockState.isOff)
     {
+      //printf("Not OFF! \n");
       if (clockState.doDisplayTime)
       {
+        //printf("Display TIme! : %ld:%f \n", clockStateCopy.time.minutes, clockStateCopy.time.seconds);
+        writeTime(COLOR_GREEN, clockStateCopy.time.minutes, (int)clockStateCopy.time.seconds, 1);
         // run some code to display a time some kinda displayTime{int, int, color}
       }
       else
@@ -582,6 +611,9 @@ extern "C" void app_main(void)
    * examples/protocols/README.md for more information about this function.
    */
   ESP_ERROR_CHECK(example_connect());
+
+  esp_wifi_set_ps(WIFI_PS_NONE);
+
 
   xTaskCreatePinnedToCore(dds_example_task, "dds_readers", 16384, NULL, 5, NULL, 1);
   xTaskCreatePinnedToCore(device_task, "device_stuff", 16384, NULL, 5, NULL, 0);
