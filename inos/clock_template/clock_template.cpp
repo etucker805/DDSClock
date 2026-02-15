@@ -37,9 +37,21 @@
 static const char *TAG = "example";
 // static const char *payload = "Message from ESP32 ";
 
-// How many leds in your strip?
-#define NUM_LEDS 95
-#define STRIP_PIN 11
+// Set to 1 to use DMA for driving the LED strip, 0 otherwise
+// Please note the RMT DMA feature is only available on chips e.g. ESP32-S3/P4
+#define LED_STRIP_GPIO_PIN GPIO_NUM_12
+#define LED_STRIP_USE_DMA  0
+
+#if LED_STRIP_USE_DMA
+// Numbers of the LED in the strip
+#define LED_STRIP_LED_COUNT 256
+#define LED_STRIP_MEMORY_BLOCK_WORDS 1024 // this determines the DMA block size
+#else
+// Numbers of the LED in the strip
+#define LED_STRIP_LED_COUNT 95
+#define LED_STRIP_MEMORY_BLOCK_WORDS 0 // let the driver choose a proper memory block size automatically
+#endif // LED_STRIP_USE_DMA
+#define LED_STRIP_RMT_RES_HZ  (10 * 1000 * 1000)
 
 /*************************************************************/
 #define CDX_HEAP_SIZE (1024 * 1024) /* 1 MB */
@@ -71,27 +83,31 @@ ClockCommand clockState;
 
 // leds config
 // LED strip common configuration
+
+// leds config
+// LED strip common configuration
 led_strip_config_t strip_config = {
-    .strip_gpio_num = STRIP_PIN,                                 // The GPIO that connected to the LED strip's data line
-    .max_leds = NUM_LEDS,                                        // The number of LEDs in the strip,
-    .led_model = LED_MODEL_WS2811,                               // LED strip model, it determines the bit timing
-    .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB, // The color component format is G-R-B
-    .flags = {
-        .invert_out = false, // don't invert the output signal
-    }};
+        .strip_gpio_num = LED_STRIP_GPIO_PIN, // The GPIO that connected to the LED strip's data line
+        .max_leds = LED_STRIP_LED_COUNT,      // The number of LEDs in the strip,
+        .led_model = LED_MODEL_WS2812,        // LED strip model
+        .color_component_format = LED_STRIP_COLOR_COMPONENT_FMT_GRB, // The color order of the strip: GRB
+        .flags = {
+            .invert_out = false, // don't invert the output signal
+        }
+    };
 
-/// RMT backend specific configuration
-led_strip_rmt_config_t rmt_config = {
-    .clk_src = RMT_CLK_SRC_DEFAULT,    // different clock source can lead to different power consumption
-    .resolution_hz = 10 * 1000 * 1000, // RMT counter clock frequency: 10MHz
-    .mem_block_symbols = 64,           // the memory size of each RMT channel, in words (4 bytes)
-    .flags = {
-        .with_dma = true, // DMA feature is available on chips like ESP32-S3/P4
-    }};
-
+    // LED strip backend configuration: RMT
+    led_strip_rmt_config_t rmt_config = {
+        .clk_src = RMT_CLK_SRC_DEFAULT,        // different clock source can lead to different power consumption
+        .resolution_hz = LED_STRIP_RMT_RES_HZ, // RMT counter clock frequency
+        .mem_block_symbols = LED_STRIP_MEMORY_BLOCK_WORDS, // the memory block size used by the RMT channel
+        .flags = {
+            .with_dma = LED_STRIP_USE_DMA,     // Using DMA can improve performance when driving more LEDs
+        }
+    };
 led_strip_handle_t led_strip;
 
-Colors leds[NUM_LEDS];
+Colors leds[LED_STRIP_LED_COUNT];
 
 
 
@@ -310,7 +326,7 @@ void readClockCommand()
 // CLOCK stuff ----------------------------------------------
 
 std::vector<std::string> mapNames = {"dig1", "dig2", "dig3", "dig4", "colonUp", "colonDown", "decimal", "gear1", "gear2"};
-std::map<Colors, std::tuple<int, int, int>> colorToRgb;
+std::map<Colors, std::vector<int>> colorToRgb;
 std::map<std::string, std::vector<int>> TEST_MAP;
 
 std::unordered_map<int, std::vector<bool>> sevenSegmentMap = {
@@ -341,12 +357,12 @@ void initMap()
   TEST_MAP["gear1"] = {0, 1, 2, 3};
   TEST_MAP["gear2"] = {92, 93, 94, 95};
 
-  colorToRgb[COLOR_RED] = std::make_tuple(225, 0, 0);
-  colorToRgb[COLOR_GREEN] = std::make_tuple(0, 255, 0);
-  colorToRgb[COLOR_BLUE] = std::make_tuple(0, 0, 255);
-  colorToRgb[COLOR_BLACK] = std::make_tuple(0, 0, 0);
-  colorToRgb[COLOR_YELLOW] = std::make_tuple(225, 0xC4, 0);
-  colorToRgb[COLOR_ORANGE] = std::make_tuple(0xF3, 0x80, 0x22);
+  colorToRgb[COLOR_RED] = {225, 0, 0};
+  colorToRgb[COLOR_GREEN] = {0, 255, 0};
+  colorToRgb[COLOR_BLUE] = {0, 0, 255};
+  colorToRgb[COLOR_BLACK] = {0, 0, 0};
+  colorToRgb[COLOR_YELLOW] = {225, 0xC4, 0};
+  colorToRgb[COLOR_ORANGE] = {0xF3, 0x80, 0x22};
 }
 
 std::vector<bool> getSevenSegmentDisplay(int digit) {
@@ -357,6 +373,11 @@ void ledShow(){
   //for(){
   //  // iter throug leds and set pixel colors.  
   //}
+
+  for(int i = 0; i < LED_STRIP_LED_COUNT; i ++){
+    auto colorVals = colorToRgb[leds[i]];
+    ESP_ERROR_CHECK(led_strip_set_pixel(led_strip, i, colorVals[0], colorVals[1], colorVals[2]));
+  }
 }
 // Color to RGB
 
@@ -377,7 +398,7 @@ void changeNumLed(std::vector<bool> ledVec, std::string name, float seconds, Col
       leds[TEST_MAP[name][i] + 1] = COLOR_BLACK;
     }
     // either write a func to do the set _ pixel stuff or find a way to do it here? 
-
+    ledShow();
     led_strip_refresh(led_strip);
     //delay(1);
   }
@@ -390,11 +411,14 @@ void writeSolid(Colors color)
 
   for (std::string name : mapNames)
   {
-    if (name != "gear1" && name != "gear2")
+    if (name != "gear1" && name != "gear2" && name != "colonUp" && name != "colonDown" && name != "decimal")
     { // let the grars be probably...
+
       for (auto num : TEST_MAP[name])
       {
-        led_strip_set_pixel(led_strip, num, std::get<0>(colorVals), std::get<0>(colorVals), std::get<0>(colorVals));
+        ESP_ERROR_CHECK(led_strip_set_pixel(led_strip, num - 1, colorVals[0], colorVals[1], colorVals[2]));
+        ESP_ERROR_CHECK(led_strip_set_pixel(led_strip, num, colorVals[0], colorVals[1], colorVals[2]));
+        ESP_ERROR_CHECK(led_strip_set_pixel(led_strip, num + 1, colorVals[0], colorVals[1], colorVals[2]));
       }
     }
   }
@@ -411,7 +435,7 @@ void writeGear(Colors color, bool leftGear)
   for (auto num : TEST_MAP[gear])
   {
     
-    led_strip_set_pixel(led_strip, num, std::get<0>(colorVals), std::get<0>(colorVals), std::get<0>(colorVals));
+    led_strip_set_pixel(led_strip, num, colorVals[0], colorVals[1], colorVals[2]);
   }
 }
 
@@ -441,6 +465,8 @@ void writeTime(Colors color, int minuets, int seconds, int doColon)
   changeNumLed(num2leds, "dig3", seconds, color);
   changeNumLed(num3leds, "dig2", seconds, color);
   changeNumLed(num4leds, "dig1", seconds, color);
+
+  ledShow();
 
 }
 
@@ -574,18 +600,22 @@ static void device_task(void *pvParameters)
     //   Write Time
     //   others?
 
+    // writeSolid(COLOR_BLUE);
+    // ESP_ERROR_CHECK(led_strip_refresh(led_strip));
+    
     if (!clockState.isOff)
     {
       //printf("Not OFF! \n");
       if (clockState.doDisplayTime)
       {
-        //printf("Display TIme! : %ld:%f \n", clockStateCopy.time.minutes, clockStateCopy.time.seconds);
+        printf("Display TIme! : %ld:%f \n", clockStateCopy.time.minutes, clockStateCopy.time.seconds);
         writeTime(COLOR_GREEN, clockStateCopy.time.minutes, (int)clockStateCopy.time.seconds, 1);
         // run some code to display a time some kinda displayTime{int, int, color}
       }
       else
       {
         // solid color Was the intentaion I believe.
+        writeSolid(COLOR_YELLOW);
       }
     }
     else
@@ -593,7 +623,7 @@ static void device_task(void *pvParameters)
       // clock is off.
       writeSolid(COLOR_BLACK);
     }
-    led_strip_refresh(led_strip);
+    ESP_ERROR_CHECK(led_strip_refresh(led_strip));
   }
 }
 

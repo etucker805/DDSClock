@@ -197,7 +197,7 @@ void gui::loop(int domain_id)
                      ImGuiWindowFlags_NoBringToFrontOnFocus |
                      ImGuiWindowFlags_NoTitleBar |
                      ImGuiWindowFlags_NoResize |
-                     ImGuiWindowFlags_NoSavedSettings |
+                     //ImGuiWindowFlags_NoSavedSettings |
                      ImGuiWindowFlags_NoFocusOnAppearing |
                      ImGuiWindowFlags_NoMove |
                      // ImGuiWindowFlags_NoDocking |
@@ -710,10 +710,5 @@ void gui::draw_dashboard(int domain_id)
     }
   }
 
-  if(roboClock::done){
-    backend::close_renderer();
-    backend::close_backend();
-    close_imgui();
-    std::cout << "done\n";
-  }
+
 }
