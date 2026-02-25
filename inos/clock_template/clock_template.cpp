@@ -303,6 +303,8 @@ void readClockCommand()
         
         ClockCommand_copy(&clockState, smsg);
         clockStateMutex.unlock();
+
+        //ESP_LOGI(TAG, "Recieved Command");
       }
     }
     // fflush(stdout);
@@ -358,11 +360,11 @@ void initMap()
   TEST_MAP["gear2"] = {92, 93, 94, 95};
 
   colorToRgb[COLOR_RED] = {225, 0, 0};
-  colorToRgb[COLOR_GREEN] = {0, 255, 0};
-  colorToRgb[COLOR_BLUE] = {0, 0, 255};
+  colorToRgb[COLOR_GREEN] = {0, 0, 255}; // actualyb lue
+  colorToRgb[COLOR_BLUE] = {0, 255, 0};
   colorToRgb[COLOR_BLACK] = {0, 0, 0};
-  colorToRgb[COLOR_YELLOW] = {225, 0xC4, 0};
-  colorToRgb[COLOR_ORANGE] = {0xF3, 0x80, 0x22};
+  colorToRgb[COLOR_YELLOW] = {225, 0, 0xC4};  
+  colorToRgb[COLOR_ORANGE] = {0xF3, 0x80, 0x22}; // no clue if this is right prob not
 }
 
 std::vector<bool> getSevenSegmentDisplay(int digit) {
@@ -465,7 +467,6 @@ void writeTime(Colors color, int minuets, int seconds, int doColon)
   changeNumLed(num2leds, "dig3", seconds, color);
   changeNumLed(num3leds, "dig2", seconds, color);
   changeNumLed(num4leds, "dig1", seconds, color);
-
   ledShow();
 
 }
@@ -605,12 +606,36 @@ static void device_task(void *pvParameters)
     
     if (!clockState.isOff)
     {
-      //printf("Not OFF! \n");
+      //TODO 
+      // add all of the other states? wins and stuff, might be a just write solid from command thing
+      // do gears and colon stuffs 
+      // put idles to black, might also be a solid color thing. 
+      // figure out gears......
+      // whole test???????? I guess..... 
       if (clockState.doDisplayTime)
       {
-        printf("Display TIme! : %ld:%f \n", clockStateCopy.time.minutes, clockStateCopy.time.seconds);
-        writeTime(COLOR_GREEN, clockStateCopy.time.minutes, (int)clockStateCopy.time.seconds, 1);
-        // run some code to display a time some kinda displayTime{int, int, color}
+        ESP_LOGI(TAG, "Display TIme! : %ld:%f \n", clockStateCopy.time.minutes, clockStateCopy.time.seconds);
+        Colors mainColor;
+        if(clockStateCopy.time.minutes >= 1){
+          //green
+          mainColor = COLOR_GREEN;
+        } else if(clockStateCopy.time.seconds > 30){
+          //yellow
+          mainColor = COLOR_YELLOW;
+        } else {
+          //red 
+          mainColor = COLOR_RED;
+        }
+        if(clockStateCopy.time.minutes < 0 || clockStateCopy.time.seconds < 0 ){
+          writeTime(mainColor, 0, 0, 1); 
+
+        }else{
+          writeTime(mainColor, clockStateCopy.time.minutes, (int)clockStateCopy.time.seconds, 1); 
+        }
+
+      
+        // colors -> green = blue and yellow = purple, red is red tho. 
+      
       }
       else
       {
