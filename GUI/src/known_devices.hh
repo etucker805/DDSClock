@@ -79,7 +79,7 @@ public:
     return (&org);
   }
 
-  void setOrgState(std::string sysName, int state){
+  void setOrgState(std::string sysName, State state){
     org[sysName].state = state;
   }
 
@@ -157,7 +157,7 @@ public:
       tempInfo.devices = tempMap;
       tempInfo.durationSec = 180; // default 3 minuetts. 
       tempInfo.settings = 0; // nothing enabled I guesss... I may add a defualt one. 
-      tempInfo.state = 0; // set to Idle / wait for ready 
+      tempInfo.state = State::WAITING ; // set to Idle / wait for ready 
       tempInfo.timer = NewTimer();
       tempInfo.doCountdown = 1; 
 

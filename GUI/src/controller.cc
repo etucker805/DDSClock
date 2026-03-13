@@ -7,7 +7,8 @@ void Controller::handle_button_data(const ButtonData & data){
 
     //oka soooooooo 
     if(!data.mainPressed() && !data.tapoutPressed() ){
-        // no action happened - likey uninteded message - bug in button .
+        // no action happened - likey uninteded message - bug in button . ( or they pressed both imma ignore it..) 
+        // might log here
     }
     else
     {
@@ -15,44 +16,49 @@ void Controller::handle_button_data(const ButtonData & data){
         auto org = *known_devices.getOrg();
         if(data.mainPressed() != 0){
             // switch over this system state..
+
+            // THIS IS::: If main press from either button 
             switch(org[data.sysName()].state){
                 // 0: idle, 
-                case 0:
-                printf("should be here\n");
+                // No inputs in waiting state
+                case State::WAIT_FOR_READY :
                     if(known_devices.get_device_role(data.deviceId( )) == DeviceRole::ROLE_BUTTON_BLUE){
-                        known_devices.setOrgState(data.sysName(), 2); 
+                        known_devices.setOrgState(data.sysName(), State::BLUE_READY); 
                     } else {
                         //orange button
-                        known_devices.setOrgState(data.sysName(), 1); 
+                        known_devices.setOrgState(data.sysName(), State::ORANGE_READY); 
                     }
                     break;
-                case 1:
+                case State::ORANGE_READY:
                     if(known_devices.get_device_role(data.deviceId( )) == DeviceRole::ROLE_BUTTON_BLUE){
-                        known_devices.setOrgState(data.sysName(), 3); 
+                        known_devices.setOrgState(data.sysName(), State::BOTH_READY); 
 
                     } else{
                         //orange repeat press...
                     }
                     break;
-                case 2:
+                case State::BLUE_READY:
                     if(known_devices.get_device_role(data.deviceId( )) == DeviceRole::ROLE_BUTTON_ORANGE){
-                        known_devices.setOrgState(data.sysName(), 3); 
+                        known_devices.setOrgState(data.sysName(), State::BOTH_READY); 
 
                     } else{
                         //blue repeat press...
                     }
                     break;
-                case 3:
-                    //dont care
-                    break;
-                case 4:
-                    //dont care
-                    break;
-                case 5:
-                case 6:
-                case 7:
-                case 8:
-                    //dont care
+                // others I now care about for MAIN press: ( mostly for unstick )
+                // run.. (run start? no.. )
+                // NOT: 3-2-1, pause, end, wins, uh hmmmm  
+
+                case State::RUN : 
+                    if(known_devices.get_device_role(data.deviceId( )) == DeviceRole::ROLE_BUTTON_ORANGE){
+                        // ORANGE unstick ( might just trigger a pause and set a flag to display on gui.. ( special pause for unstick at least I think..... )) 
+                    } else {
+                        // Blue Unstick
+                    }
+
+
+
+
                     break;
                 default:
                     //unknown state???????? wth. 
@@ -63,34 +69,16 @@ void Controller::handle_button_data(const ButtonData & data){
         } else if( data.tapoutPressed() != 0){
             switch(org[data.sysName()].state){
                 // 0: idle, 1: orangReady, 2: blueReady, 3: goTime/Running, 4: doneIdle, 5: orangeWInn, 6: BlueWin
-                case 0:
-                    // im gonna ignore this here.. .
-                    break;
-                case 1:
-                    // and here
-                    break;
-                case 2:
-                case 3:
-
-                    // and here
-                    break;
-                case 5:
+               
+                case State::RUN:
                     if(known_devices.get_device_role(data.deviceId( )) == DeviceRole::ROLE_BUTTON_BLUE){
-                        known_devices.setOrgState(data.sysName(), 5); 
+                        known_devices.setOrgState(data.sysName(), State::RUN); 
                     } else {
                         //orange button
-                        known_devices.setOrgState(data.sysName(), 6); 
+                        known_devices.setOrgState(data.sysName(), State::BLUE_WIN); 
                     }
                     break;
-                case 4:
-                    //ignoreing here too.
-                    break;
-                
-                case 6:
-                case 7:
-                case 8:
-                    //and here... 
-                    break;
+                // I think I only care here... Ill ask uday or someone latter I think... I just need to have a bunck of questions in a list to semd him about what he wants to do. 
                 default:
                     //unknown state???????? wth. 
                     break;

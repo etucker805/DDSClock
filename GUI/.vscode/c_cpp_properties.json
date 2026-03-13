@@ -7,7 +7,9 @@
                 "${workspaceFolder}/build/imgui-1.90.9/src/imgui",
                 "${workspaceFolder}/build/imgui-1.90.9/src/imgui/backends",
                 "${workspaceFolder}/build/**",
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/src/**",
+                "${workspaceFolder}/**",
+                "~/dds/**"
             ],
             "defines": [
                 "_DEBUG",

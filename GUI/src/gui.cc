@@ -589,7 +589,7 @@ void gui::draw_dashboard(int domain_id)
       // enable 3 - secoond cooountdown?
       ImGui::Text("Timer Runninig: %d", org[system_name].timer.isRunning());
       if(org[system_name].timer.isRunning()){
-        if(org[system_name].state == 4){
+        if(org[system_name].state == State::COUNTDOWN){
           ImGui::Text("Time Remaining: %d", (3 - org[system_name].timer.elapsedMsec()/1000));
         } else {
           ImGui::Text("Time Remaining: %f", (org[system_name].durationSec - org[system_name].timer.elapsedMsec()/1000));
@@ -599,8 +599,10 @@ void gui::draw_dashboard(int domain_id)
       
 
 
+      // ------------------------ CONTROL BUTTONS ---------------------------
+
       // Start Button. -------------------------
-      if(org[system_name].state == 3){
+      if(org[system_name].state == State::BOTH_READY){
         ImGui::PushStyleColor(ImGuiCol_Button, green_col);
       } else {
         ImGui::PushStyleColor(ImGuiCol_Button, grey_col);
@@ -608,10 +610,10 @@ void gui::draw_dashboard(int domain_id)
 
       if(ImGui::Button("START", ImVec2(200,100))){
         if(org[system_name].doCountdown){
-          roboClock::control.known_devices.setOrgState(system_name, 10); // ?
+          roboClock::control.known_devices.setOrgState(system_name, State::COUNTDOWN_START); // ?
         }
         else{
-          roboClock::control.known_devices.setOrgState(system_name, 11); // ?
+          roboClock::control.known_devices.setOrgState(system_name, State::RUN_START); // ?
         }
       }
       ImGui::PopStyleColor();
@@ -637,7 +639,7 @@ void gui::draw_dashboard(int domain_id)
       ImGui::PopStyleColor();
 
       // Declare Winner: 
-      if(org[system_name].state == 5 || org[system_name].state == 13){  // may add other ones to this
+      if(org[system_name].state == State::RUN || org[system_name].state == State::MATCH_OVER){  // may add other ones to this
         // green button, than will make it off. 
         ImGui::PushStyleColor(ImGuiCol_Button, blue_col);
 
@@ -646,11 +648,11 @@ void gui::draw_dashboard(int domain_id)
 
       }
       if(ImGui::Button(" BLUE WIN ", ImVec2(200,100))){
-        roboClock::control.known_devices.setOrgState(system_name, 6);
+        roboClock::control.known_devices.setOrgState(system_name, State::BLUE_WIN);
       }
       ImGui::PopStyleColor(1);
       ImGui::SameLine();
-      if(org[system_name].state == 5 || org[system_name].state == 13 ){  // may add other ones to this
+      if(org[system_name].state == State::RUN || org[system_name].state == State::MATCH_OVER ){  // may add other ones to this
         // green button, than will make it off. 
         ImGui::PushStyleColor(ImGuiCol_Button, orange_col);
 
@@ -659,7 +661,7 @@ void gui::draw_dashboard(int domain_id)
 
       }
       if(ImGui::Button(" ORANGE WIN ", ImVec2(200,100))){
-        roboClock::control.known_devices.setOrgState(system_name, 7);
+        roboClock::control.known_devices.setOrgState(system_name, State::ORANGE_WIN);
       }
 
       ImGui::PopStyleColor();
@@ -674,14 +676,29 @@ void gui::draw_dashboard(int domain_id)
 
       }
       if(ImGui::Button(" Pause ", ImVec2(200,100))){
-        roboClock::control.known_devices.setOrgState(system_name, 9);
+        roboClock::control.known_devices.setOrgState(system_name, State::PAUSE);
       }
       ImGui::PopStyleColor();
+
+      // resuem 
+      if(!org[system_name].timer._running){ // might be paused... 
+        // green button, than will make it off. 
+        ImGui::PushStyleColor(ImGuiCol_Button, green_col);
+
+      } else{
+        ImGui::PushStyleColor(ImGuiCol_Button, grey_col);
+
+      }
+      if(ImGui::Button(" Resume ", ImVec2(200,100))){
+        roboClock::control.known_devices.setOrgState(system_name, State::RESUME);
+      }
+      ImGui::PopStyleColor();
+
 
       
       // Panic
       ImGui::SameLine();
-      if(org[system_name].state == 8){
+      if(org[system_name].state == State::ERROR){
         // green button, than will make it off. 
         ImGui::PushStyleColor(ImGuiCol_Button, green_col);
 
@@ -690,7 +707,7 @@ void gui::draw_dashboard(int domain_id)
 
       }
       if(ImGui::Button("AHHHHHHHH!!!!!", ImVec2(200,100))){
-        roboClock::control.known_devices.setOrgState(system_name, 8);
+        roboClock::control.known_devices.setOrgState(system_name, State::ERROR);
       }
       ImGui::PopStyleColor();
 
@@ -699,14 +716,51 @@ void gui::draw_dashboard(int domain_id)
 
       if( ImGui::Button( "Reset", ImVec2(200,100) )){
         org[system_name].timer.stop();
-        roboClock::control.known_devices.setOrgState(system_name, 0);
+        roboClock::control.known_devices.setOrgState(system_name, State::WAIT_FOR_READY);
       }
       ImGui::SameLine();
       if (ImGui::Button("Close", ImVec2(200,100)))
       {
         pair.second = false; // not sure this will stay in the map.
       }
+
+
+
+
+
+      // -------------------------- popups -----------------------------
+      // so when I see I'm in the start unstick state (or just the in unstick?) send popup, with button to resolve, and mabey a way to set time remaining? or something... just add a time remaining box so I can adjust it too I think
+
+      if(org[system_name].state == State::UNSTICK_ACTIVE || org[system_name].state == State::UNSTICK_START ){
+        ImGui::OpenPopup("UnsitckActive");
+      }
+      if (ImGui::BeginPopupModal("ClockCommand"))
+      {
+        ImGui::Text("Unstick called for by someone IDK who... ");
+        if (ImGui ::Button("Resolve Unstick ( resume match )")) // Mihght ahve this to a 3 -2 -1 thing too... ugh @TODO
+        {
+          roboClock::control.known_devices.setOrgState(system_name, State::RESUME); // might add a reume countdown state to sdo a 3-2-1 off of resume... or it might work fine if I do 3-2-1 -> resume -> run always, im not sure...
+          ImGui::CloseCurrentPopup();
+
+        }
+        ImGui::EndPopup();
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+
       ImGui::End();
+    
+    
     }
   }
 

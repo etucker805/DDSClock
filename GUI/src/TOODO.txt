@@ -4,19 +4,21 @@ APP :
     GUI:
 
         make good? 
+        Make sure that commands can overide, and give more control to state and time left and so on....
+        display states as state names 
 
 
 
     STATES:
-        ADD LIOOGHT STATES (?) - dont think I need, jsut think about some kinda like transition animation for the arena - like a quick button on thing, 3-2-1. 
+        ADD LIOOGHT STATES (?) - dont think I need, jsut think about some kinda like transition animation for the arena - like a quick button on thing, 3-2-1. ( might ras pi it over breakkkkk ughhh just quick and dirty I think ill have to do)
 
         want main press in match to be unstick untill we redo the buttons to have that button. .AH.
 
 
 
     OTEHRFUNCT:
-        make sure dead device removes it from the list in systems / gui whatever. oh uh I think id does but test. 
-        Make it not segfault when it exits. huh. I dont know why it does this .... its still an issue. 
+        make sure dead device removes it from the list in systems / gui whatever. oh uh I think id does but test.  
+        Make it not segfault when it exits. huh. I dont know why it does this .... its still an issue. (well not realy but wh)
 
 
 
@@ -24,9 +26,9 @@ INOS :
 
     - add command reader. - global color var - noo just reset on reception I think..... 
     - add color / state loogic / wriitnjgn. ^^^
-    Do CLOCKKKKCKCKCKCKKCKCKCLKLKCKLKCKCKOCOKCOKCCKOOKCOK
+    
     add colors to the buttons as in do light. 
-    clock does led out of range (40) I dk . 
+     
 
 Later thing:::
     add devids to all the command messages so I can handle multiple controlers on a network ( or I could just domain it but that hard coded.... )

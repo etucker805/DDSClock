@@ -112,5 +112,5 @@
         "valarray": "cpp",
         "variant": "cpp"
     },
-    "cmake.sourceDirectory": "C:/Users/Ethan/Documents/GitHub/DDSClock/GUI/src"
+    "cmake.sourceDirectory": "/home/ethan/Robobrawl/DDSClock/GUI/src"
 }

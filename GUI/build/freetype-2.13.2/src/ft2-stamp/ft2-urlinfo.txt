@@ -1,12 +1,3 @@
-# This is a generated file and its contents are an internal implementation detail.
-# The download step will be re-executed if anything in this file changes.
-# No other meaning or use of this file is supported.
-
-method=url
-command=/usr/bin/cmake;-P;/home/ethan/Robobrawl/DDSClock/GUI/build/freetype-2.13.2/src/ft2-stamp/download-ft2.cmake;COMMAND;/usr/bin/cmake;-P;/home/ethan/Robobrawl/DDSClock/GUI/build/freetype-2.13.2/src/ft2-stamp/verify-ft2.cmake;COMMAND;/usr/bin/cmake;-P;/home/ethan/Robobrawl/DDSClock/GUI/build/freetype-2.13.2/src/ft2-stamp/extract-ft2.cmake
-source_dir=/home/ethan/Robobrawl/DDSClock/GUI/build/freetype-2.13.2/src/ft2
-work_dir=/home/ethan/Robobrawl/DDSClock/GUI/build/freetype-2.13.2/src
-url(s)=https://sourceforge.net/projects/freetype/files/freetype2/2.13.2/freetype-2.13.2.tar.xz
-hash=
-no_extract=
-
+repository='external project URL'
+module='https://sourceforge.net/projects/freetype/files/freetype2/2.13.2/freetype-2.13.2.tar.xz'
+tag=''
